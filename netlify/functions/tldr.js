@@ -48,16 +48,21 @@ function parseEdition(html) {
       return;
     }
 
+    const className = node.getAttribute ? (node.getAttribute("class") || "") : "";
+    const isSummaryDiv = tag === "div" && /newsletter-html/i.test(className);
+
     if (
-      (tag === "p" || tag === "div" || tag === "td" || tag === "span") &&
       lastItem &&
       !lastItem.summary &&
-      text.length > 30 &&
-      text.length < 1200 &&
+      text.length > 15 &&
+      text.length < 1500 &&
       text !== lastItem.title &&
-      !text.includes(lastItem.title) &&
       !/minute read/i.test(text) &&
-      !/^advertisement/i.test(text)
+      !/^advertisement/i.test(text) &&
+      (isSummaryDiv ||
+        ((tag === "p" || tag === "div" || tag === "td" || tag === "span") &&
+          text.length > 30 &&
+          !(node.querySelectorAll && node.querySelectorAll("a").length > 0)))
     ) {
       lastItem.summary = text;
     }
