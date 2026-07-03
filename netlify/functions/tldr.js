@@ -8,56 +8,53 @@ const EDITIONS = {
 
 function parseEdition(html) {
   const root = parse(html);
-  const anchors = root.querySelectorAll("a").filter((a) =>
-    /\(\d+\s*minute read\)/i.test(a.text || "")
-  );
-  if (anchors.length < 5) return null;
+  const nodes = root.querySelectorAll("h1, h2, h3, h4, p, a");
 
   const sections = [];
   let current = null;
+  let lastItem = null;
 
-  anchors.forEach((a) => {
-    const heading = a.closest("h1,h2,h3,h4");
-    let sectionLabel = "Nyheter";
-    let el = heading ? heading.previousElementSibling : null;
-    let hops = 0;
-    while (el && hops < 8) {
-      const txt = (el.text || "").trim();
-      if (
-        txt &&
-        txt.length < 60 &&
-        !/minute read/i.test(txt) &&
-        /^[A-Za-z][A-Za-z &,]*$/.test(txt)
-      ) {
-        sectionLabel = txt;
-        break;
+  nodes.forEach((node) => {
+    const tag = node.tagName ? node.tagName.toLowerCase() : "";
+    const text = (node.text || "").trim();
+    if (!text) return;
+
+    if (tag === "a" && /\(\d+\s*minute read\)/i.test(text)) {
+      const m = text.match(/\((\d+)\s*minute read\)/i);
+      const title = text.replace(/\(\d+\s*minute read\)/i, "").trim();
+      if (!current) {
+        current = { section: "Nyheter", items: [] };
+        sections.push(current);
       }
-      el = el.previousElementSibling;
-      hops++;
+      lastItem = {
+        title,
+        url: node.getAttribute("href"),
+        minutes: m ? parseInt(m[1], 10) : null,
+        summary: "",
+      };
+      current.items.push(lastItem);
+      return;
     }
 
-    if (!current || current.section !== sectionLabel) {
-      current = { section: sectionLabel, items: [] };
+    if (
+      ["h1", "h2", "h3", "h4"].includes(tag) &&
+      !/minute read/i.test(text) &&
+      text.length < 60 &&
+      /^[A-Za-z][A-Za-z &,]*$/.test(text)
+    ) {
+      current = { section: text, items: [] };
       sections.push(current);
+      lastItem = null;
+      return;
     }
 
-    const raw = a.text || "";
-    const m = raw.match(/\((\d+)\s*minute read\)/i);
-    const title = raw.replace(/\(\d+\s*minute read\)/i, "").trim();
-
-    let summary = "";
-    const sib = heading ? heading.nextElementSibling : a.nextElementSibling;
-    if (sib && sib.tagName === "P") summary = (sib.text || "").trim();
-
-    current.items.push({
-      title,
-      url: a.getAttribute("href"),
-      minutes: m ? parseInt(m[1], 10) : null,
-      summary,
-    });
+    if (tag === "p" && lastItem && !lastItem.summary && !/^advertisement/i.test(text)) {
+      lastItem.summary = text;
+    }
   });
 
-  return sections;
+  const cleaned = sections.filter((s) => s.items.length > 0);
+  return cleaned.length ? cleaned : null;
 }
 
 export const handler = async (event) => {
