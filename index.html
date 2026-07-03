@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FEED — lesetid-instrument</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F0EFE9;
+    --paper-2:#E8E6DD;
+    --ink:#16191C;
+    --ink-soft:#52565B;
+    --ink-faint:#8B8A82;
+    --accent:#E8590C;
+    --accent-ink:#7A2D06;
+    --teal:#1F5673;
+    --line:#C7C2B4;
+    --line-strong:#16191C;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .frame{
+    max-width:1180px;
+    margin:0 auto;
+    padding:28px 24px 100px;
+    display:grid;
+    grid-template-columns:64px 1fr;
+    gap:0 32px;
+  }
+  @media (max-width:820px){
+    .frame{grid-template-columns:1fr; padding:16px 16px 80px;}
+    .gauge-col{display:none;}
+    .mobile-bar{display:block !important;}
+  }
+
+  /* ---- Masthead / title block ---- */
+  .masthead{
+    grid-column:1 / -1;
+    border:1px solid var(--line-strong);
+    display:grid;
+    grid-template-columns:1fr auto;
+    margin-bottom:6px;
+  }
+  .masthead-title{
+    padding:20px 24px 16px;
+    border-right:1px solid var(--line-strong);
+  }
+  .masthead-title h1{
+    font-family:'Newsreader', serif;
+    font-weight:600;
+    font-size:38px;
+    letter-spacing:-0.01em;
+    margin:0 0 4px;
+  }
+  .masthead-title p{
+    margin:0;
+    color:var(--ink-soft);
+    font-size:14px;
+  }
+  .masthead-meta{
+    display:grid;
+    grid-template-rows:repeat(3,1fr);
+  }
+  .masthead-meta div{
+    padding:6px 16px;
+    border-bottom:1px solid var(--line);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--ink-soft);
+    display:flex;
+    justify-content:space-between;
+    gap:16px;
+    min-width:220px;
+  }
+  .masthead-meta div:last-child{border-bottom:none;}
+  .masthead-meta span:last-child{color:var(--ink); font-weight:500;}
+
+  .mobile-bar{
+    display:none;
+    grid-column:1/-1;
+    position:sticky; top:0; z-index:5;
+    background:var(--paper);
+    border-bottom:1px solid var(--line-strong);
+    padding:8px 0 10px;
+    margin-bottom:8px;
+  }
+  .mobile-bar .track{height:4px; background:var(--paper-2); border:1px solid var(--line);}
+  .mobile-bar .fill{height:100%; width:0%; background:var(--accent);}
+  .mobile-bar .label{
+    font-family:'IBM Plex Mono', monospace; font-size:10px; color:var(--ink-soft);
+    margin-top:6px; display:flex; justify-content:space-between;
+  }
+
+  /* ---- Gauge column ---- */
+  .gauge-col{
+    position:relative;
+  }
+  .gauge{
+    position:sticky;
+    top:28px;
+    height:calc(100vh - 56px);
+    max-height:640px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  .gauge-label-top{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px;
+    color:var(--ink-soft);
+    writing-mode:vertical-rl;
+    text-orientation:mixed;
+    margin-bottom:8px;
+  }
+  .gauge-track{
+    position:relative;
+    width:6px;
+    flex:1;
+    background:var(--paper-2);
+    border:1px solid var(--line);
+  }
+  .gauge-fill{
+    position:absolute;
+    bottom:0; left:0; right:0;
+    width:100%;
+    height:0%;
+    background:var(--accent);
+    transition:height .08s linear;
+  }
+  .gauge-ticks{
+    position:absolute; top:0; left:12px; height:100%; width:1px;
+  }
+  .tick{
+    position:absolute; left:0;
+    display:flex; align-items:center; gap:6px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:9px;
+    color:var(--ink-faint);
+    white-space:nowrap;
+  }
+  .tick::before{content:""; width:8px; height:1px; background:var(--line-strong);}
+  .gauge-bottom{
+    margin-top:8px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:9px;
+    color:var(--ink-faint);
+    text-align:center;
+  }
+
+  /* ---- Article column ---- */
+  main{min-width:0;}
+  .status-line{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px;
+    color:var(--ink-faint);
+    margin:10px 0 22px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .status-dot{width:6px; height:6px; border-radius:50%; background:var(--teal); display:inline-block;}
+  .status-dot.demo{background:var(--ink-faint);}
+
+  .section{margin-bottom:8px;}
+  .section-head{
+    display:flex; align-items:baseline; gap:10px;
+    border-top:1px solid var(--line-strong);
+    border-bottom:1px solid var(--line);
+    padding:8px 0;
+    margin:26px 0 4px;
+  }
+  .section-code{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--accent-ink);
+    background:rgba(232,89,12,0.12);
+    padding:2px 6px;
+  }
+  .section-name{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+
+  .item{
+    padding:18px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .item:last-child{border-bottom:none;}
+  .item h3{
+    font-family:'Newsreader', serif;
+    font-weight:500;
+    font-size:21px;
+    line-height:1.3;
+    margin:0 0 6px;
+  }
+  .item h3 a{color:var(--ink); text-decoration:none; border-bottom:1px solid var(--line-strong);}
+  .item h3 a:hover{color:var(--accent-ink); border-color:var(--accent);}
+  .item p{
+    margin:0 0 8px;
+    color:var(--ink-soft);
+    font-size:15px;
+    line-height:1.55;
+    max-width:62ch;
+  }
+  .item .meta{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px;
+    color:var(--ink-faint);
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+  }
+
+  footer{
+    margin-top:40px;
+    padding-top:16px;
+    border-top:1px solid var(--line-strong);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px;
+    color:var(--ink-faint);
+    line-height:1.6;
+  }
+</style>
+</head>
+<body>
+
+<div class="frame">
+
+  <div class="masthead">
+    <div class="masthead-title">
+      <h1>FEED</h1>
+      <p>Ett instrument for tech-lesing — kuratert, tidsmålt, uten støy.</p>
+    </div>
+    <div class="masthead-meta">
+      <div><span>UTGAVE</span><span id="meta-date">—</span></div>
+      <div><span>KILDE</span><span id="meta-source">TLDR Tech</span></div>
+      <div><span>LESETID</span><span id="meta-time">—</span></div>
+    </div>
+  </div>
+
+  <div class="mobile-bar">
+    <div class="track"><div class="fill" id="mobileFill"></div></div>
+    <div class="label"><span id="mobileLabelLeft">0:00 lest</span><span id="mobileLabelRight">— igjen</span></div>
+  </div>
+
+  <div class="gauge-col">
+    <div class="gauge">
+      <div class="gauge-label-top">LESETID</div>
+      <div class="gauge-track">
+        <div class="gauge-fill" id="gaugeFill"></div>
+        <div class="gauge-ticks" id="gaugeTicks"></div>
+      </div>
+      <div class="gauge-bottom" id="gaugeBottom">0:00 / 0:00</div>
+    </div>
+  </div>
+
+  <main>
+    <div class="status-line">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">Henter siste utgave …</span>
+    </div>
+    <div id="content"></div>
+
+    <footer id="footer"></footer>
+  </main>
+
+</div>
+
+<script>
+const FALLBACK_DATE = "2026-06-16";
+const FALLBACK = [
+  { section: "Big tech & startups", items: [
+    { title: "Anthropic sin sikkerhets-fordel", url: "https://stratechery.com/2026/anthropics-safety-superpower/", minutes: 18,
+      summary: "Mange har avfeid Anthropics forsiktige utrulling av Mythos som markedsføring. Modellen er langt bedre til å finne og utnytte sikkerhetshull enn tidligere generasjoner — og kort tid etter lansering ble beskyttelsen likevel jailbreaket." },
+    { title: "Fox kjøper Roku for 25 milliarder dollar", url: "https://www.wsj.com/business/deals/fox-roku-deal-f6e564f9", minutes: 4,
+      summary: "Oppkjøpet gir Fox' strømmesatsing skala til å konkurrere med Amazon og Netflix om annonsekroner. Ventes sluttført første halvår 2027." }
+  ]},
+  { section: "Vitenskap & fremtidsteknologi", items: [
+    { title: "SpaceX og den sansende solen", url: "https://www.a16z.news/p/spacex-and-the-sentient-sun", minutes: 44,
+      summary: "SpaceX er en oppskytningsleverandør, en internett-underavdeling og et AI-lab i én — trolig det eneste selskapet som bygger hele stabelen for en overgang til et post-mangel-samfunn." },
+    { title: "Hjerne-datamaskin-grensesnitt gir uavhengig kommunikasjon ved ALS", url: "https://medicalxpress.com/news/2026-06-brain-interface-enables-independent-accurate.html", minutes: 14,
+      summary: "Et grensesnitt utviklet ved UC Davis oversetter nevrale signaler til tekst og markørkontroll, og gir full datamaskin-interaksjon for en pasient med alvorlig lammelse." }
+  ]},
+  { section: "Programmering, design & data science", items: [
+    { title: "Gyldne regelen for tilpassbare select-elementer", url: "https://webkit.org/blog/18117/the-golden-rule-of-customizable-select/", minutes: 5,
+      summary: "Ny funksjon i Safari 27 lar utviklere style select-elementer uten JS-biblioteker — så lenge option-elementene har tekstinnhold eller tilgjengelighets-attributter." },
+    { title: "Agentisk kodegjennomgang", url: "https://addyosmani.com/blog/agentic-code-review/", minutes: 28,
+      summary: "Kodeagenter blir raskt bedre. Tyngdepunktet i faget har flyttet seg fra å skrive kode til å avgjøre om man kan stole på den." }
+  ]},
+  { section: "Diverse", items: [
+    { title: "Chrome-oppdatering setter sluttstrek for populære annonseblokkere", url: "https://9to5google.com/2026/06/15/google-chromes-next-update-will-mark-the-end-of-popular-ad-blockers/", minutes: 2,
+      summary: "Manifest V2 fjernes for godt i Chrome 151, og med det slutter mange annonseblokkere å fungere." },
+    { title: "Nettet slik vi kjenner det kommer til å forsvinne", url: "https://www.minid.net/2026/6/15/the-web-is-going-to-dissapear", minutes: 20,
+      summary: "Søk erstattes gradvis av AI-samtalegrensesnitt. Nettsider blir infrastruktur for maskiner fremfor et sted mennesker faktisk går." },
+    { title: "Å kjøre lokale modeller er bra nå", url: "https://vickiboykis.com/2026/06/15/running-local-models-is-good-now/", minutes: 9,
+      summary: "Lokale modeller er fortsatt trege og ressurskrevende, men klarer mange oppgaver kompetent og sparer kostnader." }
+  ]}
+];
+
+const state = { data: null, date: null, live: false };
+
+function fmt(sec){
+  const m = Math.floor(sec/60), s = Math.round(sec%60);
+  return m + ":" + String(s).padStart(2,"0");
+}
+
+function render(sections, dateStr, live){
+  state.data = sections;
+  state.date = dateStr;
+  state.live = live;
+
+  document.getElementById("statusDot").className = "status-dot" + (live ? "" : " demo");
+  document.getElementById("statusText").textContent = live
+    ? "Live hentet fra tldr.tech"
+    : "Viser lagret eksempel-utgave (live-henting fra funksjonen feilet)";
+  document.getElementById("meta-date").textContent = dateStr;
+
+  const flat = sections.flatMap(s => s.items);
+  const totalReadSummarySec = flat.length * 22;
+  document.getElementById("meta-time").textContent = fmt(totalReadSummarySec) + " min";
+
+  const content = document.getElementById("content");
+  content.innerHTML = "";
+  sections.forEach((sec, i) => {
+    const secEl = document.createElement("div");
+    secEl.className = "section";
+    secEl.innerHTML = `<div class="section-head">
+        <span class="section-code">§${String(i+1).padStart(2,"0")}</span>
+        <span class="section-name">${sec.section}</span>
+      </div>`;
+    sec.items.forEach(it => {
+      const el = document.createElement("div");
+      el.className = "item";
+      el.dataset.sec = "22";
+      el.innerHTML = `
+        <h3><a href="${it.url}" target="_blank" rel="noopener">${it.title}</a></h3>
+        <p>${it.summary || ""}</p>
+        <div class="meta">${it.minutes ? it.minutes + " min lesning (kilde)" : ""}</div>
+      `;
+      secEl.appendChild(el);
+    });
+    content.appendChild(secEl);
+  });
+
+  document.getElementById("footer").innerHTML =
+    `FEED · prototype bygget for Ole-Petter · kilde: TLDR Tech (${dateStr}) · ${flat.length} saker`;
+
+  buildGauge(totalReadSummarySec);
+}
+
+function buildGauge(totalSec){
+  const ticksWrap = document.getElementById("gaugeTicks");
+  ticksWrap.innerHTML = "";
+  const totalMin = Math.max(1, Math.round(totalSec/60));
+  for(let m=0; m<=totalMin; m++){
+    const pct = 100 - (m/totalMin)*100;
+    const t = document.createElement("div");
+    t.className = "tick";
+    t.style.top = pct + "%";
+    t.textContent = m + "m";
+    ticksWrap.appendChild(t);
+  }
+  document.getElementById("gaugeBottom").textContent = "0:00 / " + fmt(totalSec);
+  updateGaugeProgress(0, totalSec);
+}
+
+function updateGaugeProgress(readSec, totalSec){
+  const pct = Math.min(100, (readSec/totalSec)*100);
+  document.getElementById("gaugeFill").style.height = pct + "%";
+  document.getElementById("gaugeBottom").textContent = fmt(readSec) + " / " + fmt(totalSec);
+  document.getElementById("mobileFill").style.width = pct + "%";
+  document.getElementById("mobileLabelLeft").textContent = fmt(readSec) + " lest";
+  document.getElementById("mobileLabelRight").textContent = fmt(Math.max(0,totalSec-readSec)) + " igjen";
+}
+
+function attachScrollGauge(){
+  const main = document.querySelector("main");
+  window.addEventListener("scroll", () => {
+    if(!state.data) return;
+    const totalSec = state.data.flatMap(s=>s.items).length * 22;
+    const rect = main.getBoundingClientRect();
+    const docHeight = main.scrollHeight - window.innerHeight;
+    const scrolled = Math.min(1, Math.max(0, (window.scrollY - main.offsetTop + 200) / Math.max(1, main.scrollHeight - 200)));
+    updateGaugeProgress(scrolled*totalSec, totalSec);
+  }, { passive:true });
+}
+
+function parseEditionHTML(html){
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const anchors = Array.from(doc.querySelectorAll("a"));
+  const headlineLinks = anchors.filter(a => /\(\d+\s*minute read\)/i.test(a.textContent));
+  if(headlineLinks.length < 5) return null;
+
+  const sections = [];
+  let current = null;
+  headlineLinks.forEach(a => {
+    let sectionLabel = "Nyheter";
+    let el = a.closest("h1,h2,h3,h4") ? a.closest("h1,h2,h3,h4").previousElementSibling : a.parentElement.previousElementSibling;
+    let hops = 0;
+    while(el && hops < 8){
+      const txt = (el.textContent||"").trim();
+      if(txt && txt.length < 60 && !/minute read/i.test(txt) && /^[A-Za-z][A-Za-z &,]*$/.test(txt)){
+        sectionLabel = txt;
+        break;
+      }
+      el = el.previousElementSibling;
+      hops++;
+    }
+    if(!current || current.section !== sectionLabel){
+      current = { section: sectionLabel, items: [] };
+      sections.push(current);
+    }
+    const m = a.textContent.match(/\((\d+)\s*minute read\)/i);
+    const title = a.textContent.replace(/\(\d+\s*minute read\)/i, "").trim();
+    let summary = "";
+    const container = a.closest("h1,h2,h3,h4");
+    let sib = container ? container.nextElementSibling : a.parentElement.nextElementSibling;
+    if(sib && sib.tagName === "P") summary = sib.textContent.trim();
+    current.items.push({ title, url: a.href, minutes: m ? parseInt(m[1],10) : null, summary });
+  });
+  return sections;
+}
+
+async function tryLiveFetch(){
+  const withTimeout = (p, ms) => Promise.race([p, new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")), ms))]);
+  try{
+    const res = await withTimeout(fetch("/.netlify/functions/tldr?edition=tech"), 8000);
+    if(!res.ok) throw new Error("function returned " + res.status);
+    const data = await res.json();
+    if(!data.sections || !data.sections.length) throw new Error("empty sections");
+    render(data.sections, data.date, true);
+  } catch(e){
+    render(FALLBACK, FALLBACK_DATE, false);
+  }
+}
+
+attachScrollGauge();
+tryLiveFetch();
+</script>
+</body>
+</html>
