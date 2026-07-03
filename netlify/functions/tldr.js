@@ -8,7 +8,7 @@ const EDITIONS = {
 
 function parseEdition(html) {
   const root = parse(html);
-  const nodes = root.querySelectorAll("h1, h2, h3, h4, p, a");
+  const nodes = root.querySelectorAll("h1, h2, h3, h4, p, div, a");
 
   const sections = [];
   let current = null;
@@ -48,7 +48,17 @@ function parseEdition(html) {
       return;
     }
 
-    if (tag === "p" && lastItem && !lastItem.summary && !/^advertisement/i.test(text)) {
+    if (
+      (tag === "p" || tag === "div") &&
+      lastItem &&
+      !lastItem.summary &&
+      text.length > 30 &&
+      text.length < 500 &&
+      text !== lastItem.title &&
+      !text.includes(lastItem.title) &&
+      !/minute read/i.test(text) &&
+      !/^advertisement/i.test(text)
+    ) {
       lastItem.summary = text;
     }
   });
