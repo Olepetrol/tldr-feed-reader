@@ -53,7 +53,7 @@ function parseEdition(html) {
       lastItem &&
       !lastItem.summary &&
       text.length > 30 &&
-      text.length < 500 &&
+      text.length < 1200 &&
       text !== lastItem.title &&
       !text.includes(lastItem.title) &&
       !/minute read/i.test(text) &&
