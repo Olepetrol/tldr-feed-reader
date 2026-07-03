@@ -8,7 +8,7 @@ const EDITIONS = {
 
 function parseEdition(html) {
   const root = parse(html);
-  const nodes = root.querySelectorAll("h1, h2, h3, h4, p, div, a");
+  const nodes = root.querySelectorAll("h1, h2, h3, h4, p, div, td, span, a");
 
   const sections = [];
   let current = null;
@@ -49,7 +49,7 @@ function parseEdition(html) {
     }
 
     if (
-      (tag === "p" || tag === "div") &&
+      (tag === "p" || tag === "div" || tag === "td" || tag === "span") &&
       lastItem &&
       !lastItem.summary &&
       text.length > 30 &&
