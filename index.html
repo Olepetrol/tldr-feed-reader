@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FEED — lesetid-instrument</title>
+<title>TLDR — lesetid-instrument</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -237,7 +237,7 @@
 
   <div class="masthead">
     <div class="masthead-title">
-      <h1>FEED</h1>
+      <h1>TLDR</h1>
       <p>Ett instrument for tech-lesing — kuratert, tidsmålt, uten støy.</p>
     </div>
     <div class="masthead-meta">
@@ -352,7 +352,7 @@ function render(sections, dateStr, live){
   });
 
   document.getElementById("footer").innerHTML =
-    `FEED · prototype bygget for Ole-Petter · kilde: TLDR Tech (${dateStr}) · ${flat.length} saker`;
+    `TLDR · prototype bygget for Ole-Petter · kilde: TLDR Tech (${dateStr}) · ${flat.length} saker`;
 
   buildGauge(totalReadSummarySec);
 }
