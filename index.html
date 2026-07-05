@@ -229,6 +229,21 @@
     color:var(--ink-faint);
     line-height:1.6;
   }
+
+  .lang-btn{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px;
+    color:var(--ink-faint);
+    background:none;
+    border:1px solid var(--line);
+    padding:2px 6px;
+    cursor:pointer;
+    letter-spacing:0.06em;
+    line-height:1.4;
+    margin-left:auto;
+  }
+  .lang-btn:hover{border-color:var(--ink-soft); color:var(--ink-soft);}
+  .lang-btn:disabled{opacity:0.5; cursor:default;}
 </style>
 </head>
 <body>
@@ -267,6 +282,7 @@
     <div class="status-line">
       <span class="status-dot" id="statusDot"></span>
       <span id="statusText">Henter siste utgave …</span>
+      <button class="lang-btn" id="langToggle" onclick="toggleLanguage()">NO</button>
     </div>
     <div id="content"></div>
 
@@ -307,6 +323,62 @@ const FALLBACK = [
 ];
 
 const state = { data: null, date: null, live: false };
+const langState = { current: "en", translations: null };
+
+async function translateText(text) {
+  const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|no`);
+  const json = await res.json();
+  return json.responseData?.translatedText || text;
+}
+
+async function toggleLanguage() {
+  const btn = document.getElementById("langToggle");
+  if (!state.data) return;
+
+  if (langState.current === "no") {
+    const items = document.querySelectorAll(".item");
+    let idx = 0;
+    state.data.forEach(sec => {
+      sec.items.forEach(it => {
+        const el = items[idx++];
+        if (!el) return;
+        el.querySelector("h3 a").textContent = it.title;
+        el.querySelector("p").textContent = it.summary || "";
+      });
+    });
+    langState.current = "en";
+    btn.textContent = "NO";
+    return;
+  }
+
+  btn.textContent = "…";
+  btn.disabled = true;
+
+  if (!langState.translations) {
+    const all = state.data.flatMap(s => s.items);
+    const results = [];
+    for (const it of all) {
+      const [title, summary] = await Promise.all([
+        translateText(it.title),
+        it.summary ? translateText(it.summary) : Promise.resolve("")
+      ]);
+      results.push({ title, summary });
+    }
+    langState.translations = results;
+  }
+
+  const items = document.querySelectorAll(".item");
+  langState.translations.forEach((tr, i) => {
+    const el = items[i];
+    if (!el) return;
+    el.querySelector("h3 a").textContent = tr.title;
+    el.querySelector("p").textContent = tr.summary;
+  });
+
+  langState.current = "no";
+  btn.textContent = "EN";
+  btn.disabled = false;
+}
 
 function fmt(sec){
   const m = Math.floor(sec/60), s = Math.round(sec%60);
@@ -317,6 +389,10 @@ function render(sections, dateStr, live){
   state.data = sections;
   state.date = dateStr;
   state.live = live;
+  langState.current = "en";
+  langState.translations = null;
+  const btn = document.getElementById("langToggle");
+  if (btn) { btn.textContent = "NO"; btn.disabled = false; }
 
   document.getElementById("statusDot").className = "status-dot" + (live ? "" : " demo");
   document.getElementById("statusText").textContent = live
