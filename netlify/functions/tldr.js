@@ -48,7 +48,10 @@ function parseEdition(html) {
       return;
     }
 
-    const className = node.getAttribute ? (node.getAttribute("class") || "") : "";
+    const className =
+      (node.getAttribute ? node.getAttribute("class") || "" : "") +
+      " " +
+      (node.rawAttrs || "");
     const isSummaryDiv = tag === "div" && /newsletter-html/i.test(className);
 
     if (
@@ -69,7 +72,14 @@ function parseEdition(html) {
   });
 
   const cleaned = sections.filter((s) => s.items.length > 0);
-  return cleaned.length ? cleaned : null;
+  const summaryDivCount = nodes.filter((n) => {
+    const cls =
+      (n.getAttribute ? n.getAttribute("class") || "" : "") +
+      " " +
+      (n.rawAttrs || "");
+    return n.tagName && n.tagName.toLowerCase() === "div" && /newsletter-html/i.test(cls);
+  }).length;
+  return cleaned.length ? { sections: cleaned, _debugSummaryDivCount: summaryDivCount } : null;
 }
 
 export const handler = async (event) => {
@@ -87,8 +97,8 @@ export const handler = async (event) => {
 
     const editionRes = await fetch(`${base}/${date}`);
     const editionHtml = await editionRes.text();
-    const sections = parseEdition(editionHtml);
-    if (!sections) throw new Error("could not parse edition content");
+    const parsed = parseEdition(editionHtml);
+    if (!parsed) throw new Error("could not parse edition content");
 
     return {
       statusCode: 200,
@@ -96,7 +106,12 @@ export const handler = async (event) => {
         "Content-Type": "application/json",
         "Cache-Control": "public, max-age=1800",
       },
-      body: JSON.stringify({ date, edition, sections }),
+      body: JSON.stringify({
+        date,
+        edition,
+        sections: parsed.sections,
+        _debugSummaryDivCount: parsed._debugSummaryDivCount,
+      }),
     };
   } catch (err) {
     return {
