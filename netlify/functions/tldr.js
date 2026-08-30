@@ -87,17 +87,30 @@ export const handler = async (event) => {
   const base = EDITIONS[edition] || EDITIONS.tech;
 
   try {
-    const archivesRes = await fetch(`${base}/archives`);
-    const archivesHtml = await archivesRes.text();
-    const dateMatch = archivesHtml.match(
-      new RegExp(`/${edition}/(\\d{4}-\\d{2}-\\d{2})`)
-    );
-    if (!dateMatch) throw new Error("no edition date found in archives");
-    const date = dateMatch[1];
+    let date = null;
+    let parsed = null;
 
-    const editionRes = await fetch(`${base}/${date}`);
-    const editionHtml = await editionRes.text();
-    const parsed = parseEdition(editionHtml);
+    const today = new Date();
+    for (let i = 0; i < 10; i++) {
+      const d = new Date(
+        Date.UTC(
+          today.getUTCFullYear(),
+          today.getUTCMonth(),
+          today.getUTCDate() - i
+        )
+      );
+      const candidate = d.toISOString().slice(0, 10);
+
+      const editionRes = await fetch(`${base}/${candidate}`);
+      const editionHtml = await editionRes.text();
+      const candidateParsed = parseEdition(editionHtml);
+      if (candidateParsed) {
+        date = candidate;
+        parsed = candidateParsed;
+        break;
+      }
+    }
+
     if (!parsed) throw new Error("could not parse edition content");
 
     return {
